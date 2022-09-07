@@ -11,3 +11,6 @@ reqwest = { version = "0.11", features = ["json"] }
 futures = "0.3" 
 tokio = { version = "1.12.0", features = ["full"] }
 serde = { version = "1.0.130", features = ["derive"] }
+kdam = "0.2.4"
+tabled = "0.8.0"
+byte-unit = "4.0.14"

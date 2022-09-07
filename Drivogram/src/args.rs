@@ -38,7 +38,7 @@ pub fn cli<'a>() -> Command<'a>{
 
         )
         .subcommand(
-            Command::new("uploads")
+            Command::new("myuploads")
                 .help("Get the list of all your uploads"),
 
         )
