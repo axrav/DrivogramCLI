@@ -38,6 +38,15 @@ pub fn cli<'a>() -> Command<'a>{
 
         )
         .subcommand(
+            Command::new("download")
+                .about("downloads the file to your local disk")
+                .arg_required_else_help(true)
+                .help("download file from drivogram,Please pass the filekey to download")
+                .arg(arg!(-f --filekey <FILEKEY> ... "File to download"))
+
+
+        )
+        .subcommand(
             Command::new("myuploads")
                 .help("Get the list of all your uploads"),
 

@@ -7,7 +7,7 @@ description = "A CLI tool to interact with drivogram's backend"
 [dependencies]
 clap = "3.2.20"
 colored = "2.0.0"
-reqwest = { version = "0.11", features = ["json"] } 
+reqwest = { version = "0.11", features = ["json", "stream"] } 
 futures = "0.3" 
 tokio = { version = "1.12.0", features = ["full"] }
 serde = { version = "1.0.130", features = ["derive"] }

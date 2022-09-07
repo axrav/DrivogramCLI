@@ -39,7 +39,9 @@ fn main() {
                }
       }
      
-
+      Some(("download", sub_data)) =>{
+         functions::download_file(sub_data)
+      }
                
       _ => unreachable!(),
    }
