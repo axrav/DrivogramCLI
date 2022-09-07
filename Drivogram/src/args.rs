@@ -1,6 +1,6 @@
 use clap::{arg, Arg, Command};
 use std::path::PathBuf;
-pub fn cli<'a>() -> Command<'a>{
+pub fn cli<'a>() -> Command<'a> {
     Command::new("drivogram")
         .author("Aarav Arora <aaravarora.works@gmail.com>")
         // Interactive mode to be worked on later
@@ -41,7 +41,7 @@ pub fn cli<'a>() -> Command<'a>{
             Command::new("download")
                 .about("downloads the file to your local disk")
                 .arg_required_else_help(true)
-                .help("download file from drivogram,Please pass the filekey to download")
+                .help("DOWNLOAD File from Drivogram,Please pass the filekey to download")
                 .arg(arg!(-f --filekey <FILEKEY> ... "File to download"))
 
 
