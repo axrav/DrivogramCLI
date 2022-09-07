@@ -1,15 +1,15 @@
 use serde::Deserialize;
-// use tabled::Tabled;
-extern crate byte_unit;
+use tabled::Tabled;
+// extern crate byte_unit;
 // use byte_unit::Byte;
 #[derive(Debug, Deserialize)]
-// #[derive(Tabled)]
+#[derive(Tabled)]
 pub struct UploadData{
     #[serde(rename = "file_name")]
     pub filename : String,
     pub content : String,
     #[serde(rename = "file_size")]
-    pub filesize : Option<FileSize>,
+    pub filesize : String,
     #[serde(rename = "file_key")]
     pub filekey : String
 
@@ -31,11 +31,7 @@ pub struct UploadResponse{
 
 }
 
-#[derive(Debug, Deserialize)]
-pub enum FileSize {
-    String(String),
-    U128(u128)
-}
+
 
 
 

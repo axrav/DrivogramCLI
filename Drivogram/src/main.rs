@@ -35,9 +35,12 @@ fn main() {
       Some(("myuploads", _)) =>{
                match functions::show_data(){
                   Ok(()) => (),
-                  Err(err) => println!("{:#?}", err)
+                  Err(_) => println!("{:#?}", "Unable to Process your request,Try checking your network".bold().red())
                }
       }
+     
+
+               
       _ => unreachable!(),
    }
       

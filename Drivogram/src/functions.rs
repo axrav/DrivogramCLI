@@ -3,8 +3,8 @@ use reqwest::StatusCode;
 use colored::Colorize;
 use std::fs;
 extern crate byte_unit;
-// use byte_unit::Byte;
-// use tabled::{Table, Style};
+use byte_unit::Byte;
+use tabled::{Table, Style};
 #[path = "types.rs"] mod types;
 
 
@@ -51,30 +51,28 @@ pub async fn login_check(sub_match: &ArgMatches ) -> Result<Result<bool, ()>, Bo
 pub async fn show_data() -> Result<(), Box<dyn std::error::Error>>{
     let key = fs::read_to_string("key.txt")?;
     let client =  reqwest::Client::new();
-    let resp : types::UploadResponse  = client.get("http://drivogram.aaravarora.in/api/uploads")
+    let mut resp : types::UploadResponse  = client.get("http://drivogram.aaravarora.in/api/uploads")
     .header("X-API-KEY", key)
     .send()
     .await?
     .json()
     .await?;
-    for x in resp.uploads{
-        println!("{:#?}", x.filesize);
-    };
+    let mut coll = resp.uploads.iter_mut();
+    for data in &mut coll{
+        let bytes = Byte::from_bytes(data.filesize.parse().unwrap());
+        let adjusted_byte = bytes.get_appropriate_unit(false);
+        data.filesize = adjusted_byte.to_string();
+    }
+    
+
+    let table = Table::new(resp.uploads).with(Style::modern());
+    println!("{}\n\n{}",table.to_string().bold().cyan(),"Above is the list of your uploaded stuff, to download any of them use the filekey".bold().yellow().on_bright_red());
+    
     Ok(())
 }
 
-    // for mut x in resp.uploads{
-    //     ///x.filesize = 45;
-    //     println!("{:?}",x.filesize);
-        // let got = replace(&x.filesize, )
-        // let byte = Byte::from_bytes(x.filesize);
-        // let adjusted_byte = byte.get_appropriate_unit(false);
-        // println!("{}",adjusted_byte)
 
 
-    // let table = Table::new(resp.uploads).with(Style::modern()).to_string();
-    // println!("{}", table.bold());
-    
 
 
 
