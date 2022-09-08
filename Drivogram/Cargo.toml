@@ -7,10 +7,14 @@ description = "A CLI tool to interact with drivogram's backend"
 [dependencies]
 clap = "3.2.20"
 colored = "2.0.0"
-reqwest = { version = "0.11", features = ["json", "stream"] } 
+reqwest = { version = "0.11", features = ["json", "stream", "multipart"] } 
 futures = "0.3" 
 tokio = { version = "1.12.0", features = ["full"] }
 serde = { version = "1.0.130", features = ["derive"] }
 kdam = "0.2.4"
 tabled = "0.8.0"
 byte-unit = "4.0.14"
+tokio-util = "0.7.4"
+async-stream = "0.3.3"
+regex = "1"
+indicatif = "0.17.0"

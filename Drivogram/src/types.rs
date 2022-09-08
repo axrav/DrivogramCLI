@@ -25,3 +25,10 @@ pub struct UploadResponse {
     #[serde(rename = "Uploads")]
     pub uploads: Vec<UploadData>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct UploadedResponse {
+    pub msg: String,
+    pub file_key: String,
+    pub user: String,
+}

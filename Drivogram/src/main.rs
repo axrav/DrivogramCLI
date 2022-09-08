@@ -40,21 +40,15 @@ fn main() {
                 Err(_) => println!("{}", "An Error Occured, Try Later".red().bold()),
             }
         }
-        Some(("myuploads", _)) => match functions::show_data() {
-            Ok(()) => (),
-            Err(_) => println!(
-                "{:#?}",
-                "Unable to Process your request,Try checking your network"
-                    .bold()
-                    .red()
-            ),
-        },
+        Some(("myuploads", _)) => {
+            functions::show_data().unwrap();
+        }
 
         Some(("download", sub_data)) => {
-            match functions::download_file(sub_data) {
-                Ok(()) => {}
-                Err(err) => println!("An error occured try later {:#?}", err),
-            };
+            functions::download_file(sub_data).unwrap();
+        }
+        Some(("upload", sub_data)) => {
+            functions::upload_file(sub_data).unwrap();
         }
         _ => unreachable!(),
     }

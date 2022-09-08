@@ -41,7 +41,7 @@ pub fn cli<'a>() -> Command<'a> {
             Command::new("download")
                 .about("downloads the file to your local disk")
                 .arg_required_else_help(true)
-                .help("DOWNLOAD File from Drivogram,Please pass the filekey to download")
+                .help("DOWNLOAD File from Drivogram,Please pass the filekey to Download with -f or --filekey")
                 .arg(arg!(-f --filekey <FILEKEY> ... "File to download"))
 
 

@@ -1,9 +1,19 @@
 use clap::ArgMatches;
 use colored::Colorize;
-use reqwest::StatusCode;
+use indicatif;
+use indicatif::{ProgressBar, ProgressStyle};
+use regex::Regex;
+use reqwest::{multipart, Body, StatusCode};
+use std::cmp::min;
 use std::convert::TryFrom;
+use std::path::PathBuf;
+use std::thread;
+use std::time::Duration;
+// use async_stream;
+// use tokio::stream::StreamExt;
 use std::fs;
 use tokio::io::AsyncWriteExt;
+use tokio_util::codec::{BytesCodec, FramedRead};
 extern crate byte_unit;
 use byte_unit::Byte;
 use kdam::prelude::*;
@@ -31,7 +41,7 @@ pub async fn signup(sub_match: &ArgMatches) -> Result<String, Box<dyn std::error
     Ok(final_resp)
 }
 
-// login check
+// Login check
 #[tokio::main]
 pub async fn login_check(
     sub_match: &ArgMatches,
@@ -59,7 +69,7 @@ pub async fn login_check(
     Ok(status)
 }
 
-// list uploads
+// List uploads
 #[tokio::main]
 pub async fn show_data() -> Result<(), Box<dyn std::error::Error>> {
     let key = fs::read_to_string("key.txt")?;
@@ -89,7 +99,7 @@ pub async fn show_data() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// download files
+// Download files
 #[tokio::main]
 pub async fn download_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
     let key = sub_data.get_one::<String>("filekey").expect("Required");
@@ -128,7 +138,7 @@ pub async fn download_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::err
             ),
             Column::text("[bold blue]?"),
             Column::Bar,
-            Column::Percentage(6),
+            Column::Percentage(2),
             Column::text("•"),
             Column::CountTotal,
             Column::text("•"),
@@ -145,6 +155,63 @@ pub async fn download_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::err
         pb.update_to(downloaded);
         file.write(&item).await?;
     }
-    pb.write(format!("Downloaded Successfully{}", &filename).colorize("green"));
+    pb.write(
+        format!(
+            "Downloaded Successfully {} to your local storage!",
+            &filename
+        )
+        .colorize("bold yellow"),
+    );
+    Ok(())
+}
+
+// Upload File
+
+#[tokio::main]
+pub async fn upload_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+    let file: &PathBuf = sub_data.get_one("PATH").expect("Requires a filepath");
+    let client = reqwest::Client::new();
+    let u_key = fs::read_to_string("key.txt")?;
+    let md = tokio::fs::metadata(file).await.unwrap();
+    let _total_size = md.len();
+    let filenew: Result<&PathBuf, ()> = match md.is_dir() {
+        false => Ok(file),
+        true => Err(println!(
+            "{}",
+            "CANNOT UPLOAD A DIRECTORY,TRY WITH FILES".red().bold()
+        )),
+    };
+    let file_open = tokio::fs::File::open(filenew.unwrap()).await.unwrap();
+    let reg = Regex::new(r".*/").unwrap();
+    let file_name = filenew.unwrap().to_string_lossy().to_string();
+    let final_name = reg.replace_all(&file_name, "").to_string();
+    let stream = FramedRead::new(file_open, BytesCodec::new());
+    let _body_file = multipart::Part::stream(Body::wrap_stream(stream)).file_name(final_name);
+    let form = multipart::Form::new().part("IN_FILE", _body_file);
+
+    // Upload Bar
+    let mut up = 0;
+    let pb = ProgressBar::new(md.len());
+    pb.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+        .unwrap()
+        .progress_chars("#>-"));
+    while up < md.len() {
+        let new = min(up + 223211, md.len());
+        up = new;
+        pb.set_position(new);
+        thread::sleep(Duration::from_millis(3000));
+    }
+    let res: types::UploadedResponse = client
+        .post("http://drivogram.aaravarora.in/api/upload")
+        .header("X-API-KEY", u_key)
+        .multipart(form)
+        .send()
+        .await?
+        .json()
+        .await?;
+    pb.finish();
+    let final_message = format!("{} {} {} for the User {},\nYou can check your uploaded files by using  COMMAND: drivogram uploads",filenew.unwrap().to_string_lossy().to_string(),"Has Been Uploaded Successfully To Drivogram as".bold().yellow(), res.file_key.yellow().bold(), res.user).bold().red();
+    print!("{}", final_message);
+
     Ok(())
 }
