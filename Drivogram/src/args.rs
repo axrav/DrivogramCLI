@@ -9,7 +9,7 @@ pub fn cli<'a>() -> Command<'a> {
         .subcommand_required(true)
         .version("1.0.2")
         .allow_external_subcommands(true)
-        .after_help("drivogram is an open sourced cloud drive based on telegram, Pass a subcommand to proceed, for more info checkout https://github.com/Axrav/Drivogram")
+        .after_help("Drivogram is an open sourced cloud drive based on Telegram, Pass a subcommand to proceed, for more info checkout https://github.com/Axrav/Drivogram")
         .subcommand(
             Command::new("source")
                 .about("Get the source code of drivogram"),
@@ -31,15 +31,15 @@ pub fn cli<'a>() -> Command<'a> {
         )
         .subcommand(
             Command::new("upload")
-                .about("uploads the file to your drive")
+                .about("Uploads the file to your drive")
                 .arg_required_else_help(true)
-                .help("upload file to drivogram, max size should be 1800MB,Please pass the file path")
+                .help("Upload file to drivogram, max size should be 1800MB,Please pass the file path")
                 .arg(arg!(<PATH> ... "Things to upload").value_parser(clap::value_parser!(PathBuf))),
 
         )
         .subcommand(
             Command::new("download")
-                .about("downloads the file to your local disk")
+                .about("Downloads the file to your local disk")
                 .arg_required_else_help(true)
                 .help("DOWNLOAD File from Drivogram,Please pass the filekey to Download with -f or --filekey")
                 .arg(arg!(-f --filekey <FILEKEY> ... "File to download"))
@@ -49,6 +49,14 @@ pub fn cli<'a>() -> Command<'a> {
         .subcommand(
             Command::new("myuploads")
                 .help("Get the list of all your uploads"),
+
+        )
+        .subcommand(
+            Command::new("delete")
+            .about("deletes the file from your drivogram drive")
+            .arg_required_else_help(true)
+                .help("Delete File from Drivogram,Please pass the filekey to Delete with -f or --filekey")
+                .arg(arg!(-f --filekey <FILEKEY> ... "File to download"))
 
         )
 }

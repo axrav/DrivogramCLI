@@ -32,3 +32,10 @@ pub struct UploadedResponse {
     pub file_key: String,
     pub user: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct DeleteResponse {
+    pub message: String,
+    pub file: String,
+    pub user: String,
+}

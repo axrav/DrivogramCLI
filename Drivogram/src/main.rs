@@ -8,37 +8,15 @@ fn main() {
         Some(("source", _sub_matches)) => {
             println!(
                 "{} {}",
-                "Here is the source of Drivogram:".yellow().blue().bold(),
-                "https://github.com/Axrav/Drivogram".cyan()
+                "Here is the source of Drivogram:".yellow().bold(),
+                "https://github.com/Axrav/Drivogram".cyan().bold()
             );
         }
         Some(("signup", sub_match)) => {
-            let sign = functions::signup(sub_match);
-            match sign {
-                Ok(str) => println!("{}", str),
-                Err(_) => println!("{}", "An Error Occured, Try Later".red()),
-            }
+            functions::signup(sub_match).unwrap();
         }
         Some(("login", sub_match)) => {
-            let login = functions::login_check(sub_match);
-            match login {
-                Ok(func) => match func {
-                    Ok(bool) => match bool {
-                        true => println!(
-                            "{}",
-                            "Logged in Successfully and your Key has been saved!".bright_blue()
-                        ),
-                        false => println!(
-                            "{}",
-                            "Unable to Login to Drivogram, Check your key and try again!"
-                                .red()
-                                .bold()
-                        ),
-                    },
-                    Err(_) => {}
-                },
-                Err(_) => println!("{}", "An Error Occured, Try Later".red().bold()),
-            }
+            functions::login_check(sub_match).unwrap();
         }
         Some(("myuploads", _)) => {
             functions::show_data().unwrap();
@@ -50,6 +28,14 @@ fn main() {
         Some(("upload", sub_data)) => {
             functions::upload_file(sub_data).unwrap();
         }
-        _ => println!("{}", "NOT A VALID COMMAND,TRY WITH A VALID COMMAND, CHECKOUT --help section".yellow().bold()),
+        Some(("delete", sub_data)) => {
+            functions::delete_file(sub_data).unwrap();
+        }
+        _ => println!(
+            "{}",
+            "NOT A VALID COMMAND,TRY WITH A VALID COMMAND, CHECKOUT --help section"
+                .yellow()
+                .bold()
+        ),
     }
 }

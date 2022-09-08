@@ -2,16 +2,16 @@ use clap::ArgMatches;
 use colored::Colorize;
 use indicatif;
 use indicatif::{ProgressBar, ProgressStyle};
+use mime_guess;
 use regex::Regex;
 use reqwest::{multipart, Body, StatusCode};
+use serde_json::Value;
 use std::cmp::min;
 use std::convert::TryFrom;
+use std::fs;
 use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
-// use async_stream;
-// use tokio::stream::StreamExt;
-use std::fs;
 use tokio::io::AsyncWriteExt;
 use tokio_util::codec::{BytesCodec, FramedRead};
 extern crate byte_unit;
@@ -24,8 +24,8 @@ mod types;
 
 // Signup
 #[tokio::main]
-pub async fn signup(sub_match: &ArgMatches) -> Result<String, Box<dyn std::error::Error>> {
-    println!("{}", "Connecting to Server......".green());
+pub async fn signup(sub_match: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+    println!("{}", "Connecting to Server......".green().bold());
     let name = sub_match.get_one::<String>("name").expect("Required");
     let client = reqwest::Client::new();
     let res: types::SignupKey = client
@@ -35,17 +35,16 @@ pub async fn signup(sub_match: &ArgMatches) -> Result<String, Box<dyn std::error
         .await?
         .json()
         .await?;
-    let final_resp = format!("User account has been created for {} with X-API-KEY {},\nYou Have Been Logged in with the Current Key",name.purple().italic().bold(),res.x_api_key.yellow().bold().on_green());
+    let final_resp = format!("User account has been created for {} with X-API-KEY {},\nYou Have Been Logged in with the Current Key",name.red().italic().bold(),res.x_api_key.yellow().bold().on_green());
     let _file = fs::File::create("key.txt");
     fs::write("key.txt", res.x_api_key)?;
-    Ok(final_resp)
+    println!("{}", final_resp.purple().bold());
+    Ok(())
 }
 
 // Login check
 #[tokio::main]
-pub async fn login_check(
-    sub_match: &ArgMatches,
-) -> Result<Result<bool, ()>, Box<dyn std::error::Error>> {
+pub async fn login_check(sub_match: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
     let key = sub_match.get_one::<String>("X-API-KEY").expect("Required");
     let client = reqwest::Client::new();
     let response = client
@@ -66,7 +65,24 @@ pub async fn login_check(
             "Unable To Process, Please try later".red().bold()
         )),
     };
-    Ok(status)
+    match status {
+        Ok(bool) => match bool {
+            true => println!(
+                "{}",
+                "Logged in Successfully and your Key has been saved!"
+                    .bright_blue()
+                    .bold()
+            ),
+            false => println!(
+                "{}",
+                "Unable to Login to Drivogram, Check your key and try again!"
+                    .red()
+                    .bold()
+            ),
+        },
+        Err(_) => println!("{}", "An Error Occured, Try Later".red().bold()),
+    }
+    Ok(())
 }
 
 // List uploads
@@ -157,7 +173,7 @@ pub async fn download_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::err
     }
     pb.write(
         format!(
-            "Downloaded Successfully {} to your local storage!",
+            "Downloaded {} Successfully to your Current directory!",
             &filename
         )
         .colorize("bold yellow"),
@@ -186,7 +202,12 @@ pub async fn upload_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error
     let file_name = filenew.unwrap().to_string_lossy().to_string();
     let final_name = reg.replace_all(&file_name, "").to_string();
     let stream = FramedRead::new(file_open, BytesCodec::new());
-    let _body_file = multipart::Part::stream(Body::wrap_stream(stream)).file_name(final_name);
+    let mime = mime_guess::from_path(filenew.unwrap());
+    let data = mime.first().unwrap();
+    let _body_file = multipart::Part::stream(Body::wrap_stream(stream))
+        .file_name(final_name)
+        .mime_str(&data.to_string())
+        .unwrap();
     let form = multipart::Form::new().part("IN_FILE", _body_file);
 
     // Upload Bar
@@ -210,8 +231,46 @@ pub async fn upload_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error
         .json()
         .await?;
     pb.finish();
-    let final_message = format!("{} {} {} for the User {},\nYou can check your uploaded files by using  COMMAND: drivogram uploads",filenew.unwrap().to_string_lossy().to_string(),"Has Been Uploaded Successfully To Drivogram as".bold().yellow(), res.file_key.yellow().bold(), res.user).bold().red();
+    let final_message = format!("{} {} {} for the User {},\nYou can check your uploaded files by using  COMMAND: drivogram uploads",filenew.unwrap().to_string_lossy().to_string().on_bright_purple(),"Has Been Uploaded Successfully To Drivogram as".bold().yellow(), res.file_key.yellow().bold(), res.user).bold().red();
     print!("{}", final_message);
 
+    Ok(())
+}
+
+// Delete file
+#[tokio::main]
+pub async fn delete_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+    let key = sub_data.get_one::<String>("filekey").expect("Required");
+    let client = reqwest::Client::new();
+    let u_key = fs::read_to_string("key.txt")?;
+    let resp = client
+        .delete("http://drivogram.aaravarora.in/api/delete")
+        .header("X-API-KEY", u_key)
+        .header("FILE-KEY", key)
+        .send()
+        .await?
+        .text()
+        .await?;
+    let json_data: Value = serde_json::from_str(&resp)?;
+    let filedata = &json_data["file"];
+    if filedata.is_null() {
+        println!(
+            "{} {} {}",
+            "The File with key".yellow(),
+            key.on_red(),
+            "doesnt exists,are you sure you entered right key?"
+                .bold()
+                .yellow()
+        )
+    } else {
+        let final_message = format!(
+            "The File {} has been deleted sucessfully! for the User {}",
+            json_data["file"].to_string().on_red().bold(),
+            json_data["user"].to_string().on_purple().bold()
+        )
+        .bold()
+        .yellow();
+        println!("{}", final_message);
+    }
     Ok(())
 }
