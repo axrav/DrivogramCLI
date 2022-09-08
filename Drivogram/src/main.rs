@@ -50,6 +50,6 @@ fn main() {
         Some(("upload", sub_data)) => {
             functions::upload_file(sub_data).unwrap();
         }
-        _ => unreachable!(),
+        _ => println!("{}", "NOT A VALID COMMAND,TRY WITH A VALID COMMAND, CHECKOUT --help section".yellow().bold()),
     }
 }
