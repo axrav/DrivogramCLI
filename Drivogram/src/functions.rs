@@ -1,6 +1,7 @@
 use clap::ArgMatches;
 use colored::Colorize;
 use indicatif;
+use std::process;
 use indicatif::{ProgressBar, ProgressStyle};
 use mime_guess;
 use regex::Regex;
@@ -51,9 +52,8 @@ pub async fn login_check(sub_match: &ArgMatches) -> Result<(), Box<dyn std::erro
         .get("http://drivogram.aaravarora.in/api/logincheck")
         .header("X-API-KEY", key)
         .send()
-        .await?
-        .status();
-    let status = match response {
+        .await?;
+    let status = match response.status() {
         StatusCode::OK => {
             let _file = fs::File::create("key.txt");
             fs::write("key.txt", key)?;
@@ -67,12 +67,20 @@ pub async fn login_check(sub_match: &ArgMatches) -> Result<(), Box<dyn std::erro
     };
     match status {
         Ok(bool) => match bool {
-            true => println!(
+            true => {
+               let json_data: Value = serde_json::from_str(&response.text().await.unwrap())?;
+               let username = &json_data["user"];
+                if username.is_null(){
+                    println!("Logged in Successfully with {}", key.on_red().bold());
+                    process::exit(0x0100);
+                }
+                let msg = format!("Logged in Successfully as {} and your Key has been saved!", username.to_string().italic().purple().bold())
+                .bright_blue()
+                .bold();
+                println!(
                 "{}",
-                "Logged in Successfully and your Key has been saved!"
-                    .bright_blue()
-                    .bold()
-            ),
+                msg
+            )},
             false => println!(
                 "{}",
                 "Unable to Login to Drivogram, Check your key and try again!"
