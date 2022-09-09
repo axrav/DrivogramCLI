@@ -1,7 +1,6 @@
 use clap::ArgMatches;
 use colored::Colorize;
 use indicatif;
-use std::process;
 use indicatif::{ProgressBar, ProgressStyle};
 use mime_guess;
 use regex::Regex;
@@ -11,6 +10,7 @@ use std::cmp::min;
 use std::convert::TryFrom;
 use std::fs;
 use std::path::PathBuf;
+use std::process;
 use std::thread;
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
@@ -68,19 +68,20 @@ pub async fn login_check(sub_match: &ArgMatches) -> Result<(), Box<dyn std::erro
     match status {
         Ok(bool) => match bool {
             true => {
-               let json_data: Value = serde_json::from_str(&response.text().await.unwrap())?;
-               let username = &json_data["user"];
-                if username.is_null(){
+                let json_data: Value = serde_json::from_str(&response.text().await.unwrap())?;
+                let username = &json_data["user"];
+                if username.is_null() {
                     println!("Logged in Successfully with {}", key.on_red().bold());
                     process::exit(0x0100);
                 }
-                let msg = format!("Logged in Successfully as {} and your Key has been saved!", username.to_string().italic().purple().bold())
+                let msg = format!(
+                    "Logged in Successfully as {} and your Key has been saved!",
+                    username.to_string().italic().purple().bold()
+                )
                 .bright_blue()
                 .bold();
-                println!(
-                "{}",
-                msg
-            )},
+                println!("{}", msg)
+            }
             false => println!(
                 "{}",
                 "Unable to Login to Drivogram, Check your key and try again!"
