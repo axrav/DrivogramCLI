@@ -29,7 +29,7 @@ pub async fn signup(sub_match: &ArgMatches) -> Result<(), Box<dyn std::error::Er
     let name = sub_match.get_one::<String>("name").expect("Required");
     let client = reqwest::Client::new();
     let res: types::SignupKey = client
-        .post("http://drivogram.aaravarora.in/api/signup")
+        .get("http://drivogram.aaravarora.in/api/signup")
         .header("NAME", name)
         .send()
         .await?
@@ -48,7 +48,7 @@ pub async fn login_check(sub_match: &ArgMatches) -> Result<(), Box<dyn std::erro
     let key = sub_match.get_one::<String>("X-API-KEY").expect("Required");
     let client = reqwest::Client::new();
     let response = client
-        .post("http://drivogram.aaravarora.in/api/logincheck")
+        .get("http://drivogram.aaravarora.in/api/logincheck")
         .header("X-API-KEY", key)
         .send()
         .await?
