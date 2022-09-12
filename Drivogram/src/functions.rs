@@ -13,9 +13,8 @@ extern crate byte_unit;
 use byte_unit::Byte;
 use kdam::{prelude::*, Column, RichProgress};
 use tabled::{Style, Table};
-#[path = "types.rs"]
-mod types;
-
+#[path = "helpers.rs"]
+mod helpers;
 // Signup
 #[tokio::main]
 pub async fn signup(
@@ -24,8 +23,8 @@ pub async fn signup(
     println!("{}", "Connecting to Server......".green().bold());
     let name = sub_match.get_one::<String>("name").expect("Required");
     let client = reqwest::Client::new();
-    let res: types::SignupKey = client
-        .get("http://drivogram.aaravarora.in/api/signup")
+    let res: helpers::SignupKey = client
+        .get(helpers::domain("signup"))
         .header("NAME", name)
         .send()
         .await?
@@ -47,7 +46,7 @@ pub async fn login_check(
         sub_match.get_one::<String>("X-API-KEY").expect("Required");
     let client = reqwest::Client::new();
     let response = client
-        .get("http://drivogram.aaravarora.in/api/logincheck")
+        .get(helpers::domain("logincheck"))
         .header("X-API-KEY", key)
         .send()
         .await?;
@@ -97,8 +96,8 @@ pub async fn login_check(
 pub async fn show_data() -> Result<(), Box<dyn std::error::Error>> {
     let key = fs::read_to_string("key.txt")?;
     let client = reqwest::Client::new();
-    let mut resp: types::UploadResponse = client
-        .get("http://drivogram.aaravarora.in/api/uploads")
+    let mut resp: helpers::UploadResponse = client
+        .get(helpers::domain("uploads"))
         .header("X-API-KEY", key)
         .send()
         .await?
@@ -132,7 +131,7 @@ pub async fn download_file(
     let client = reqwest::Client::new();
     let u_key = fs::read_to_string("key.txt")?;
     let mut resp = client
-        .get("http://drivogram.aaravarora.in/api/download")
+        .get(helpers::domain("download"))
         .header("X-API-KEY", u_key)
         .header("FILE-KEY", key)
         .send()
@@ -240,8 +239,8 @@ pub async fn upload_file(
         pb.set_position(new);
         thread::sleep(Duration::from_millis(3000));
     }
-    let res: types::UploadedResponse = client
-        .post("http://drivogram.aaravarora.in/api/upload")
+    let res: helpers::UploadedResponse = client
+        .post(helpers::domain("upload"))
         .header("X-API-KEY", u_key)
         .multipart(form)
         .send()
@@ -249,7 +248,7 @@ pub async fn upload_file(
         .json()
         .await?;
     pb.finish();
-    let final_message = format!("{} {} {} for the User {},\nYou can check your uploaded files by using  COMMAND: drivogram myuploads",filenew.unwrap().to_string_lossy().to_string().on_bright_purple(),"Has Been Uploaded Successfully To Drivogram as".bold().yellow(), res.file_key.yellow().bold(), res.user).bold().red();
+    let final_message = format!("{} {} {} for the User {},\nYou can check your uploaded files by using  COMMAND: drivogram myuploads",filenew.unwrap().to_string_lossy().to_string().bold().cyan(),"Has Been Uploaded Successfully To Drivogram as".bold().yellow(), res.file_key.yellow().bold(), res.user).bold().red();
     print!("{}", final_message);
 
     Ok(())
@@ -265,7 +264,7 @@ pub async fn delete_file(
     let client = reqwest::Client::new();
     let u_key = fs::read_to_string("key.txt")?;
     let resp = client
-        .delete("http://drivogram.aaravarora.in/api/delete")
+        .delete(helpers::domain("delete"))
         .header("X-API-KEY", u_key)
         .header("FILE-KEY", key)
         .send()
@@ -309,13 +308,13 @@ pub async fn share_file(
     let time = sub_data.get_one::<f64>("time").expect("Required");
     let u_key = fs::read_to_string("key.txt")?;
     let client = reqwest::Client::new();
-    let post = types::SharePost {
+    let post = helpers::SharePost {
         userkey: String::from(&u_key),
         filekey: key.to_string(),
         exp: *time,
     };
     let resp = client
-        .post("http://drivogram.aaravarora.in/api/share")
+        .post(helpers::domain("share"))
         .json(&post)
         .header("X-API-KEY", String::from(&u_key))
         .send()

@@ -2,7 +2,9 @@ mod args;
 mod functions;
 use args::cli;
 use colored::Colorize;
+use dotenv::dotenv;
 fn main() {
+    dotenv().ok();
     let data = cli().get_matches();
     match data.subcommand() {
         Some(("source", _sub_matches)) => {

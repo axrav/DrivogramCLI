@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::env::var;
 use tabled::Tabled;
 #[derive(Debug, Deserialize, Tabled)]
 pub struct UploadData {
@@ -43,4 +44,15 @@ pub struct SharePost {
     pub userkey: String,
     pub filekey: String,
     pub exp: f64,
+}
+
+pub fn domain(path: &str) -> String {
+    let domain_name: String = match var("DOMAIN_NAME") {
+        Ok(domain) => format!("{}{}{}", domain, "/api/", path),
+        Err(_) => format!(
+            "{}{}",
+            "http://drivogram.aaravarora.in/api/", path
+        ),
+    };
+    domain_name
 }
