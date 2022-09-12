@@ -59,4 +59,12 @@ pub fn cli<'a>() -> Command<'a> {
                 .arg(arg!(-f --filekey <FILEKEY> ... "File to download"))
 
         )
+        .subcommand(
+            Command::new("share")
+            .about("Share files with everyone for a specific time")
+            .arg_required_else_help(true)
+                .help("Delete File from Drivogram,Please pass the filekey to Delete with -f or --filekey")
+                .arg(arg!(-f --filekey <FILEKEY> "File to Share"))
+                .arg(arg!(-t --time <HOURS> "time in hours").value_parser(clap::value_parser!(f64)))
+        )
 }

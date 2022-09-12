@@ -1,24 +1,14 @@
 use clap::ArgMatches;
 use colored::Colorize;
-use indicatif;
-use indicatif::{ProgressBar, ProgressStyle};
-use mime_guess;
 use regex::Regex;
 use reqwest::{multipart, Body, StatusCode};
 use serde_json::Value;
-use std::cmp::min;
-use std::convert::TryFrom;
-use std::fs;
-use std::path::PathBuf;
-use std::process;
-use std::thread;
-use std::time::Duration;
+use std::{cmp::min, convert::TryFrom, fs, path::PathBuf, process, thread, time::Duration};
 use tokio::io::AsyncWriteExt;
 use tokio_util::codec::{BytesCodec, FramedRead};
 extern crate byte_unit;
 use byte_unit::Byte;
-use kdam::prelude::*;
-use kdam::{Column, RichProgress};
+use kdam::{Column, RichProgress, prelude::*};
 use tabled::{Style, Table};
 #[path = "types.rs"]
 mod types;
@@ -221,8 +211,8 @@ pub async fn upload_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error
 
     // Upload Bar
     let mut up = 0;
-    let pb = ProgressBar::new(md.len());
-    pb.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+    let pb = indicatif::ProgressBar::new(md.len());
+    pb.set_style(indicatif::ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
         .unwrap()
         .progress_chars("#>-"));
     while up < md.len() {
@@ -262,24 +252,70 @@ pub async fn delete_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error
         .await?;
     let json_data: Value = serde_json::from_str(&resp)?;
     let filedata = &json_data["file"];
-    if filedata.is_null() {
-        println!(
-            "{} {} {}",
-            "The File with key".yellow(),
-            key.on_red(),
-            "doesnt exists,are you sure you entered right key?"
-                .bold()
-                .yellow()
-        )
-    } else {
-        let final_message = format!(
-            "The File {} has been deleted sucessfully! for the User {}",
-            json_data["file"].to_string().on_red().bold(),
-            json_data["user"].to_string().on_purple().bold()
-        )
-        .bold()
-        .yellow();
-        println!("{}", final_message);
+    match filedata.is_null() {
+        true => {
+            println!(
+                "{} {} {}",
+                "The File with key".yellow(),
+                key.on_red(),
+                "doesnt exists,are you sure you entered right key?"
+                    .bold()
+                    .yellow()
+            )
+        }
+        false => {
+            let final_message = format!(
+                "The File {} has been deleted sucessfully! for the User {}",
+                json_data["file"].as_str().unwrap().on_red().bold(),
+                json_data["user"].as_str().unwrap().on_purple().bold()
+            )
+            .bold()
+            .yellow();
+            println!("{}", final_message);
+        }
+    }
+    Ok(())
+}
+
+// share file
+#[tokio::main]
+pub async fn share_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+    let key = sub_data.get_one::<String>("filekey").expect("Required");
+    let time = sub_data.get_one::<f64>("time").expect("Required");
+    let u_key = fs::read_to_string("key.txt")?;
+    let client = reqwest::Client::new();
+    let post = types::SharePost {
+        userkey: String::from(&u_key),
+        filekey: key.to_string(),
+        exp: *time,
+    };
+    let resp = client
+        .post("http://drivogram.aaravarora.in/api/share")
+        .json(&post)
+        .header("X-API-KEY", String::from(&u_key))
+        .send()
+        .await?
+        .text()
+        .await?;
+    let json_data: Value = serde_json::from_str(&resp)?;
+    let link = &json_data["link"];
+    match link.is_null() {
+        true => {
+            println!(
+                "{} {} {}",
+                "The File with key".yellow(),
+                key.on_red(),
+                "doesnt exists,are you sure you entered right key?"
+                    .bold()
+                    .yellow()
+            );
+        }
+        false => {
+            let final_message = format!(
+            "The File sharing has been enabled sucessfully for {} hours! \n\nHere is the LINK:: {}",
+            time.to_string().bold().on_red(), json_data["link"].as_str().unwrap().red().bold().italic());
+            println!("{}", final_message.bold().yellow());
+        }
     }
     Ok(())
 }

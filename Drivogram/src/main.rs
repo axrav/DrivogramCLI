@@ -31,6 +31,9 @@ fn main() {
         Some(("delete", sub_data)) => {
             functions::delete_file(sub_data).unwrap();
         }
+        Some(("share", sub_data)) => {
+            functions::share_file(sub_data).unwrap();
+        }
         _ => println!(
             "{}",
             "NOT A VALID COMMAND,TRY WITH A VALID COMMAND, CHECKOUT --help section"

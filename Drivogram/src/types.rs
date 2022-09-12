@@ -1,7 +1,5 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tabled::Tabled;
-// extern crate byte_unit;
-// use byte_unit::Byte;
 #[derive(Debug, Deserialize, Tabled)]
 pub struct UploadData {
     #[serde(rename = "file_name")]
@@ -38,4 +36,11 @@ pub struct DeleteResponse {
     pub message: String,
     pub file: String,
     pub user: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SharePost {
+    pub userkey: String,
+    pub filekey: String,
+    pub exp: f64,
 }
