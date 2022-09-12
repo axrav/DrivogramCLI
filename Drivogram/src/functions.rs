@@ -3,19 +3,24 @@ use colored::Colorize;
 use regex::Regex;
 use reqwest::{multipart, Body, StatusCode};
 use serde_json::Value;
-use std::{cmp::min, convert::TryFrom, fs, path::PathBuf, process, thread, time::Duration};
+use std::{
+    cmp::min, convert::TryFrom, fs, path::PathBuf, process, thread,
+    time::Duration,
+};
 use tokio::io::AsyncWriteExt;
 use tokio_util::codec::{BytesCodec, FramedRead};
 extern crate byte_unit;
 use byte_unit::Byte;
-use kdam::{Column, RichProgress, prelude::*};
+use kdam::{prelude::*, Column, RichProgress};
 use tabled::{Style, Table};
 #[path = "types.rs"]
 mod types;
 
 // Signup
 #[tokio::main]
-pub async fn signup(sub_match: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn signup(
+    sub_match: &ArgMatches,
+) -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", "Connecting to Server......".green().bold());
     let name = sub_match.get_one::<String>("name").expect("Required");
     let client = reqwest::Client::new();
@@ -35,8 +40,11 @@ pub async fn signup(sub_match: &ArgMatches) -> Result<(), Box<dyn std::error::Er
 
 // Login check
 #[tokio::main]
-pub async fn login_check(sub_match: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
-    let key = sub_match.get_one::<String>("X-API-KEY").expect("Required");
+pub async fn login_check(
+    sub_match: &ArgMatches,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let key =
+        sub_match.get_one::<String>("X-API-KEY").expect("Required");
     let client = reqwest::Client::new();
     let response = client
         .get("http://drivogram.aaravarora.in/api/logincheck")
@@ -116,8 +124,11 @@ pub async fn show_data() -> Result<(), Box<dyn std::error::Error>> {
 
 // Download files
 #[tokio::main]
-pub async fn download_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
-    let key = sub_data.get_one::<String>("filekey").expect("Required");
+pub async fn download_file(
+    sub_data: &ArgMatches,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let key =
+        sub_data.get_one::<String>("filekey").expect("Required");
     let client = reqwest::Client::new();
     let u_key = fs::read_to_string("key.txt")?;
     let mut resp = client
@@ -162,7 +173,10 @@ pub async fn download_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::err
             Column::RemainingTime,
         ],
     );
-    pb.replace(0, Column::text(&format!("[bold blue]{}", &filename)));
+    pb.replace(
+        0,
+        Column::text(&format!("[bold blue]{}", &filename)),
+    );
     let mut file = tokio::fs::File::create(&filename).await?;
     let mut downloaded: usize = 0;
     while let Some(item) = resp.chunk().await? {
@@ -183,8 +197,11 @@ pub async fn download_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::err
 // Upload File
 
 #[tokio::main]
-pub async fn upload_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
-    let file: &PathBuf = sub_data.get_one("PATH").expect("Requires a filepath");
+pub async fn upload_file(
+    sub_data: &ArgMatches,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let file: &PathBuf =
+        sub_data.get_one("PATH").expect("Requires a filepath");
     let client = reqwest::Client::new();
     let u_key = fs::read_to_string("key.txt")?;
     let md = tokio::fs::metadata(file).await.unwrap();
@@ -196,17 +213,19 @@ pub async fn upload_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error
             "CANNOT UPLOAD A DIRECTORY,TRY WITH FILES".red().bold()
         )),
     };
-    let file_open = tokio::fs::File::open(filenew.unwrap()).await.unwrap();
+    let file_open =
+        tokio::fs::File::open(filenew.unwrap()).await.unwrap();
     let reg = Regex::new(r".*/").unwrap();
     let file_name = filenew.unwrap().to_string_lossy().to_string();
     let final_name = reg.replace_all(&file_name, "").to_string();
     let stream = FramedRead::new(file_open, BytesCodec::new());
     let mime = mime_guess::from_path(filenew.unwrap());
     let data = mime.first().unwrap();
-    let _body_file = multipart::Part::stream(Body::wrap_stream(stream))
-        .file_name(final_name)
-        .mime_str(&data.to_string())
-        .unwrap();
+    let _body_file =
+        multipart::Part::stream(Body::wrap_stream(stream))
+            .file_name(final_name)
+            .mime_str(data.as_ref())
+            .unwrap();
     let form = multipart::Form::new().part("IN_FILE", _body_file);
 
     // Upload Bar
@@ -230,7 +249,7 @@ pub async fn upload_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error
         .json()
         .await?;
     pb.finish();
-    let final_message = format!("{} {} {} for the User {},\nYou can check your uploaded files by using  COMMAND: drivogram uploads",filenew.unwrap().to_string_lossy().to_string().on_bright_purple(),"Has Been Uploaded Successfully To Drivogram as".bold().yellow(), res.file_key.yellow().bold(), res.user).bold().red();
+    let final_message = format!("{} {} {} for the User {},\nYou can check your uploaded files by using  COMMAND: drivogram myuploads",filenew.unwrap().to_string_lossy().to_string().on_bright_purple(),"Has Been Uploaded Successfully To Drivogram as".bold().yellow(), res.file_key.yellow().bold(), res.user).bold().red();
     print!("{}", final_message);
 
     Ok(())
@@ -238,8 +257,11 @@ pub async fn upload_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error
 
 // Delete file
 #[tokio::main]
-pub async fn delete_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
-    let key = sub_data.get_one::<String>("filekey").expect("Required");
+pub async fn delete_file(
+    sub_data: &ArgMatches,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let key =
+        sub_data.get_one::<String>("filekey").expect("Required");
     let client = reqwest::Client::new();
     let u_key = fs::read_to_string("key.txt")?;
     let resp = client
@@ -279,8 +301,11 @@ pub async fn delete_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error
 
 // share file
 #[tokio::main]
-pub async fn share_file(sub_data: &ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
-    let key = sub_data.get_one::<String>("filekey").expect("Required");
+pub async fn share_file(
+    sub_data: &ArgMatches,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let key =
+        sub_data.get_one::<String>("filekey").expect("Required");
     let time = sub_data.get_one::<f64>("time").expect("Required");
     let u_key = fs::read_to_string("key.txt")?;
     let client = reqwest::Client::new();
