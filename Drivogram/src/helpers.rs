@@ -69,7 +69,11 @@ pub fn credentials_dir() -> String {
 
 pub fn read_toml() -> HashMap<String, String> {
     let cred = format!("{}/credentials", credentials_dir());
-    let data: HashMap<String, String> =
-        toml::from_str(&fs::read_to_string(&cred).unwrap()).unwrap();
+    let strd =
+        (fs::read_to_string(&cred)).unwrap_or("default".to_string());
+    let data: HashMap<String, String> = match toml::from_str(&strd) {
+        Ok(data) => data,
+        Err(_) => HashMap::new(),
+    };
     data
 }

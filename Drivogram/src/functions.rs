@@ -43,11 +43,16 @@ pub async fn signup(
     name.red().italic().bold(),
     res.x_api_key.yellow().bold().on_green());
         let content = format!("X-API-KEY = \"{}\"", res.x_api_key);
-        fs::write(
+        tokio::fs::File::create(format!(
+            "{}/credentials",
+            credentials_dir()
+        ))
+        .await?;
+        tokio::fs::write(
             format!("{}/credentials", credentials_dir()),
             content,
         )
-        .unwrap();
+        .await?;
         println!("{}", final_resp.purple().bold());
     }
     Ok(())
@@ -79,11 +84,12 @@ pub async fn login_check(
             true => {
                 if fs::metadata(format!("{}/credentials", credentials_dir()))
         .is_ok(){
-                    println!("{}", "Login Check Successfull, Your credentials are saved".bold().yellow().on_black())
+                    println!("{}", "Login Check Successfull, Your credentials are already saved".bold().yellow().on_black())
                 }
                 else{
                     let content = format!("X-API-KEY = \"{}\"", key);
-                fs::write(
+                    fs::File::create(format!("{}/credentials", credentials_dir())).unwrap();
+                    fs::write(
                     format!("{}/credentials", credentials_dir()),
                     content,
                 )?;
@@ -117,8 +123,10 @@ pub async fn login_check(
 // List uploads
 #[tokio::main]
 pub async fn show_data() -> Result<(), Box<dyn std::error::Error>> {
-    let key =
-        helpers::read_toml().get("X-API-KEY").unwrap().to_string();
+    let key = helpers::read_toml()
+        .get("X-API-KEY")
+        .ok_or("Your Userkey wasnt passed, Please signup or login")?
+        .to_string();
     let client = reqwest::Client::new();
     let mut resp: helpers::UploadResponse = client
         .get(helpers::domain("uploads"))
@@ -153,8 +161,10 @@ pub async fn download_file(
     let key =
         sub_data.get_one::<String>("filekey").expect("Required");
     let client = reqwest::Client::new();
-    let u_key =
-        helpers::read_toml().get("X-API-KEY").unwrap().to_string();
+    let u_key = helpers::read_toml()
+        .get("X-API-KEY")
+        .ok_or("Your Userkey wasnt passed, Please signup or login")?
+        .to_string();
     let mut resp = client
         .get(helpers::domain("download"))
         .header("X-API-KEY", u_key)
@@ -227,8 +237,10 @@ pub async fn upload_file(
     let file: &PathBuf =
         sub_data.get_one("PATH").expect("Requires a filepath");
     let client = reqwest::Client::new();
-    let u_key =
-        helpers::read_toml().get("X-API-KEY").unwrap().to_string();
+    let u_key = helpers::read_toml()
+        .get("X-API-KEY")
+        .ok_or("Your Userkey wasnt passed, Please signup or login")?
+        .to_string();
     let md = tokio::fs::metadata(file).await.unwrap();
     let _total_size = md.len();
     let filenew: Result<&PathBuf, ()> = match md.is_dir() {
@@ -288,8 +300,10 @@ pub async fn delete_file(
     let key =
         sub_data.get_one::<String>("filekey").expect("Required");
     let client = reqwest::Client::new();
-    let u_key =
-        helpers::read_toml().get("X-API-KEY").unwrap().to_string();
+    let u_key = helpers::read_toml()
+        .get("X-API-KEY")
+        .ok_or("Your Userkey wasnt passed, Please signup or login")?
+        .to_string();
     let resp = client
         .delete(helpers::domain("delete"))
         .header("X-API-KEY", u_key)
@@ -333,8 +347,10 @@ pub async fn share_file(
     let key =
         sub_data.get_one::<String>("filekey").expect("Required");
     let time = sub_data.get_one::<f64>("time").expect("Required");
-    let u_key =
-        helpers::read_toml().get("X-API-KEY").unwrap().to_string();
+    let u_key = helpers::read_toml()
+        .get("X-API-KEY")
+        .ok_or("Your Userkey wasnt passed, Please signup or login")?
+        .to_string();
     let client = reqwest::Client::new();
     let post = helpers::SharePost {
         userkey: String::from(&u_key),
