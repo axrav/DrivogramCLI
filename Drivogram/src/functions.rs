@@ -190,10 +190,7 @@ pub async fn download_file(
             Column::RemainingTime,
         ],
     );
-    pb.replace(
-        0,
-        Column::text(&format!("[bold blue]{}", &filename)),
-    );
+    pb.replace(0, Column::text(&format!("[bold blue]{}", &filename)));
     let mut file = tokio::fs::File::create(&filename).await?;
     let mut downloaded: usize = 0;
     while let Some(item) = resp.chunk().await? {
