@@ -24,29 +24,32 @@ pub async fn signup(
     println!("{}", "Connecting to Server......".green().bold());
     let name = sub_match.get_one::<String>("name").expect("Required");
     let client = reqwest::Client::new();
-    let res: helpers::SignupKey = client
-        .get(helpers::domain("signup"))
-        .header("NAME", name)
-        .send()
-        .await?
-        .json()
-        .await?;
-    let final_resp = format!("User account has been created for {} with X-API-KEY {},
+    if fs::metadata(format!("{}/credentials", credentials_dir()))
+        .is_ok()
+    {
+        println!("{}", format!("You have already signed in and your key already exists,want to signup as new user?").bold().purple().italic())
+    } else {
+        let res: helpers::SignupKey = client
+            .get(helpers::domain("signup"))
+            .header("NAME", name)
+            .send()
+            .await?
+            .json()
+            .await?;
+        let final_resp = format!("User account has been created for {} with X-API-KEY {},
     \nYou Have Been Logged in with the Current Key\n\nDONT LOOSE THIS KEY,
-     YOU WONT SEE THIS KEY AGAIN, SAVE THIS PROPERLY!!,\n\n 
+     THIS KEY SHOULD BE KEPT SAFELY, SAVE THIS PROPERLY!!,\n\n 
      THE KEY HAS BEEN SAVED TO $HOME/.drivogram/credentials",
     name.red().italic().bold(),
     res.x_api_key.yellow().bold().on_green());
-    let content = format!("X-API-KEY = \"{}\"", res.x_api_key);
-    if fs::metadata(format!("{}/credentials", credentials_dir()))
-        .is_err()
-    {
+        let content = format!("X-API-KEY = \"{}\"", res.x_api_key);
         fs::write(
             format!("{}/credentials", credentials_dir()),
             content,
-        )?;
+        )
+        .unwrap();
+        println!("{}", final_resp.purple().bold());
     }
-    println!("{}", final_resp.purple().bold());
     Ok(())
 }
 
@@ -64,14 +67,7 @@ pub async fn login_check(
         .send()
         .await?;
     let status = match response.status() {
-        StatusCode::OK => {
-            let content = format!("X-API-KEY = \"{}\"", key);
-            fs::write(
-                format!("{}/credentials", credentials_dir()),
-                content,
-            )?;
-            Ok(true)
-        }
+        StatusCode::OK => Ok(true),
         StatusCode::UNAUTHORIZED => Ok(false),
         _s => Err(println!(
             "{}",
@@ -81,6 +77,16 @@ pub async fn login_check(
     match status {
         Ok(bool) => match bool {
             true => {
+                if fs::metadata(format!("{}/credentials", credentials_dir()))
+        .is_ok(){
+                    println!("{}", "Login Check Successfull, Your credentials are saved".bold().yellow().on_black())
+                }
+                else{
+                    let content = format!("X-API-KEY = \"{}\"", key);
+                fs::write(
+                    format!("{}/credentials", credentials_dir()),
+                    content,
+                )?;
                 let json_data: Value = serde_json::from_str(&response.text().await.unwrap())?;
                 let username = &json_data["user"];
                 if username.is_null() {
@@ -95,6 +101,7 @@ pub async fn login_check(
                 .bold();
                 println!("{}", msg)
             }
+        }
             false => println!(
                 "{}",
                 "Unable to Login to Drivogram, Check your key and try again!"
@@ -190,7 +197,10 @@ pub async fn download_file(
             Column::RemainingTime,
         ],
     );
-    pb.replace(0, Column::text(&format!("[bold blue]{}", &filename)));
+    pb.replace(
+        0,
+        Column::text(&format!("[bold blue]{}", &filename)),
+    );
     let mut file = tokio::fs::File::create(&filename).await?;
     let mut downloaded: usize = 0;
     while let Some(item) = resp.chunk().await? {
