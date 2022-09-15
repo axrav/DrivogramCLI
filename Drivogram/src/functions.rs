@@ -1,3 +1,4 @@
+use crate::functions::helpers::credentials_dir;
 use clap::ArgMatches;
 use colored::Colorize;
 use regex::Regex;
@@ -14,7 +15,7 @@ use byte_unit::Byte;
 use kdam::{prelude::*, Column, RichProgress};
 use tabled::{Style, Table};
 #[path = "helpers.rs"]
-mod helpers;
+pub mod helpers;
 // Signup
 #[tokio::main]
 pub async fn signup(
@@ -30,9 +31,21 @@ pub async fn signup(
         .await?
         .json()
         .await?;
-    let final_resp = format!("User account has been created for {} with X-API-KEY {},\nYou Have Been Logged in with the Current Key",name.red().italic().bold(),res.x_api_key.yellow().bold().on_green());
-    let _file = fs::File::create("key.txt");
-    fs::write("key.txt", res.x_api_key)?;
+    let final_resp = format!("User account has been created for {} with X-API-KEY {},
+    \nYou Have Been Logged in with the Current Key\n\nDONT LOOSE THIS KEY,
+     YOU WONT SEE THIS KEY AGAIN, SAVE THIS PROPERLY!!,\n\n 
+     THE KEY HAS BEEN SAVED TO $HOME/.drivogram/credentials",
+    name.red().italic().bold(),
+    res.x_api_key.yellow().bold().on_green());
+    let content = format!("X-API-KEY = \"{}\"", res.x_api_key);
+    if fs::metadata(format!("{}/credentials", credentials_dir()))
+        .is_err()
+    {
+        fs::write(
+            format!("{}/credentials", credentials_dir()),
+            content,
+        )?;
+    }
     println!("{}", final_resp.purple().bold());
     Ok(())
 }
@@ -52,8 +65,11 @@ pub async fn login_check(
         .await?;
     let status = match response.status() {
         StatusCode::OK => {
-            let _file = fs::File::create("key.txt");
-            fs::write("key.txt", key)?;
+            let content = format!("X-API-KEY = \"{}\"", key);
+            fs::write(
+                format!("{}/credentials", credentials_dir()),
+                content,
+            )?;
             Ok(true)
         }
         StatusCode::UNAUTHORIZED => Ok(false),
@@ -94,7 +110,8 @@ pub async fn login_check(
 // List uploads
 #[tokio::main]
 pub async fn show_data() -> Result<(), Box<dyn std::error::Error>> {
-    let key = fs::read_to_string("key.txt")?;
+    let key =
+        helpers::read_toml().get("X-API-KEY").unwrap().to_string();
     let client = reqwest::Client::new();
     let mut resp: helpers::UploadResponse = client
         .get(helpers::domain("uploads"))
@@ -129,7 +146,8 @@ pub async fn download_file(
     let key =
         sub_data.get_one::<String>("filekey").expect("Required");
     let client = reqwest::Client::new();
-    let u_key = fs::read_to_string("key.txt")?;
+    let u_key =
+        helpers::read_toml().get("X-API-KEY").unwrap().to_string();
     let mut resp = client
         .get(helpers::domain("download"))
         .header("X-API-KEY", u_key)
@@ -202,7 +220,8 @@ pub async fn upload_file(
     let file: &PathBuf =
         sub_data.get_one("PATH").expect("Requires a filepath");
     let client = reqwest::Client::new();
-    let u_key = fs::read_to_string("key.txt")?;
+    let u_key =
+        helpers::read_toml().get("X-API-KEY").unwrap().to_string();
     let md = tokio::fs::metadata(file).await.unwrap();
     let _total_size = md.len();
     let filenew: Result<&PathBuf, ()> = match md.is_dir() {
@@ -262,7 +281,8 @@ pub async fn delete_file(
     let key =
         sub_data.get_one::<String>("filekey").expect("Required");
     let client = reqwest::Client::new();
-    let u_key = fs::read_to_string("key.txt")?;
+    let u_key =
+        helpers::read_toml().get("X-API-KEY").unwrap().to_string();
     let resp = client
         .delete(helpers::domain("delete"))
         .header("X-API-KEY", u_key)
@@ -306,7 +326,8 @@ pub async fn share_file(
     let key =
         sub_data.get_one::<String>("filekey").expect("Required");
     let time = sub_data.get_one::<f64>("time").expect("Required");
-    let u_key = fs::read_to_string("key.txt")?;
+    let u_key =
+        helpers::read_toml().get("X-API-KEY").unwrap().to_string();
     let client = reqwest::Client::new();
     let post = helpers::SharePost {
         userkey: String::from(&u_key),

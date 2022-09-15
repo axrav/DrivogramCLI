@@ -1,46 +1,49 @@
 mod args;
 mod functions;
-use args::cli;
+use args::arguments;
 use colored::Colorize;
-use dotenv::dotenv;
+use functions::helpers::credentials_dir;
+use std::fs;
 fn main() {
-    dotenv().ok();
-    let data = cli().get_matches();
-    match data.subcommand() {
-        Some(("source", _sub_matches)) => {
-            println!(
-                "{} {}",
-                "Here is the source of Drivogram:".yellow().bold(),
-                "https://github.com/Axrav/Drivogram".cyan().bold()
-            );
+    let _file_dir = fs::create_dir_all(credentials_dir());
+    let data = arguments().get_matches();
+    if let Some((name, sub_match)) = data.subcommand() {
+        match name {
+            "source" => {
+                println!(
+                    "{} {}",
+                    "Here is the source of Drivogram:"
+                        .yellow()
+                        .bold(),
+                    "https://github.com/Axrav/Drivogram"
+                        .cyan()
+                        .bold()
+                );
+            }
+            "signup" => {
+                functions::signup(sub_match).unwrap();
+            }
+            "login" => {
+                functions::login_check(sub_match).unwrap();
+            }
+            "myuploads" => {
+                functions::show_data().unwrap();
+            }
+            "download" => {
+                functions::download_file(sub_match).unwrap();
+            }
+            "upload" => {
+                functions::upload_file(sub_match).unwrap();
+            }
+            "delete" => {
+                functions::delete_file(sub_match).unwrap();
+            }
+            "share" => {
+                functions::share_file(sub_match).unwrap();
+            }
+            _ => {
+                println!("{}","NOT A VALID COMMAND,TRY WITH A VALID COMMAND, CHECKOUT --help section".yellow().bold())
+            }
         }
-        Some(("signup", sub_match)) => {
-            functions::signup(sub_match).unwrap();
-        }
-        Some(("login", sub_match)) => {
-            functions::login_check(sub_match).unwrap();
-        }
-        Some(("myuploads", _)) => {
-            functions::show_data().unwrap();
-        }
-
-        Some(("download", sub_data)) => {
-            functions::download_file(sub_data).unwrap();
-        }
-        Some(("upload", sub_data)) => {
-            functions::upload_file(sub_data).unwrap();
-        }
-        Some(("delete", sub_data)) => {
-            functions::delete_file(sub_data).unwrap();
-        }
-        Some(("share", sub_data)) => {
-            functions::share_file(sub_data).unwrap();
-        }
-        _ => println!(
-            "{}",
-            "NOT A VALID COMMAND,TRY WITH A VALID COMMAND, CHECKOUT --help section"
-                .yellow()
-                .bold()
-        ),
     }
 }

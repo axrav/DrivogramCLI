@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::env::var;
+
+use std::fs;
 use tabled::Tabled;
 #[derive(Debug, Deserialize, Tabled)]
 pub struct UploadData {
@@ -47,12 +50,26 @@ pub struct SharePost {
 }
 
 pub fn domain(path: &str) -> String {
-    let domain_name: String = match var("DOMAIN_NAME") {
-        Ok(domain) => format!("{}{}{}", domain, "/api/", path),
-        Err(_) => format!(
+    let domain_name = match read_toml().get("DOMAIN-NAME") {
+        Some(name) => {
+            format!("{}{}{}", name.to_string(), "/api/", path)
+        }
+        None => format!(
             "{}{}",
             "http://drivogram.aaravarora.in/api/", path
         ),
     };
-    domain_name
+    domain_name.to_string()
+}
+
+pub fn credentials_dir() -> String {
+    let path = var("HOME").unwrap();
+    format!("{}/.drivogram", path)
+}
+
+pub fn read_toml() -> HashMap<String, String> {
+    let cred = format!("{}/credentials", credentials_dir());
+    let data: HashMap<String, String> =
+        toml::from_str(&fs::read_to_string(&cred).unwrap()).unwrap();
+    data
 }

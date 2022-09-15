@@ -1,6 +1,6 @@
 use clap::{arg, Arg, Command};
 use std::path::PathBuf;
-pub fn cli<'a>() -> Command<'a> {
+pub fn arguments<'a>() -> Command<'a> {
     Command::new("drivogram")
         .author("Aarav Arora <aaravarora.works@gmail.com>")
         // Interactive mode to be worked on later
@@ -9,7 +9,7 @@ pub fn cli<'a>() -> Command<'a> {
         .subcommand_required(true)
         .version("1.0.2")
         .allow_external_subcommands(true)
-        .after_help("Drivogram is an open sourced cloud drive based on Telegram, Pass a subcommand to proceed, for more info checkout https://github.com/Axrav/Drivogram")
+        .after_help("Drivogram is an open sourced cloud drive based on Telegram, Pass a subcommand to proceed, for more information checkout https://github.com/Axrav/Drivogram")
         .subcommand(
             Command::new("source")
                 .about("Get the source code of drivogram"),
@@ -24,6 +24,7 @@ pub fn cli<'a>() -> Command<'a> {
         )
         .subcommand(
             Command::new("signup")
+                .about("Signup to your own drive,Drivogram")
                 .arg_required_else_help(true)
                 .arg(arg!(-n --name <NAME> "Enter your name"))
                 .help("ERROR: Signup to Drivogram with your name, Use -n or --name to pass your name"),
@@ -48,6 +49,7 @@ pub fn cli<'a>() -> Command<'a> {
         )
         .subcommand(
             Command::new("myuploads")
+                .about("List all your uploads on Drivogram")
                 .help("Get the list of all your uploads"),
 
         )
