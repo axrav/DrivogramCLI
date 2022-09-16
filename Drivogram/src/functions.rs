@@ -14,6 +14,8 @@ extern crate byte_unit;
 use byte_unit::Byte;
 use kdam::{prelude::*, Column, RichProgress};
 use tabled::{Style, Table};
+
+use self::helpers::path_exists;
 #[path = "helpers.rs"]
 pub mod helpers;
 // Signup
@@ -24,35 +26,34 @@ pub async fn signup(
     println!("{}", "Connecting to Server......".green().bold());
     let name = sub_match.get_one::<String>("name").expect("Required");
     let client = reqwest::Client::new();
-    if fs::metadata(format!("{}/credentials", credentials_dir()))
-        .is_ok()
-    {
-        println!("{}", format!("You have already signed in and your key already exists,want to signup as new user?").bold().purple().italic())
+    if helpers::path_exists(&format!(
+        "{}/credentials",
+        credentials_dir()
+    )) {
+        println!("{}", format!("You have already signed in and your key already exists,why you want to signup as new user?").bold().purple().italic())
     } else {
-        let res: helpers::SignupKey = client
-            .get(helpers::domain("signup"))
+        let res = client
+            .get(helpers::get_domain("signup"))
             .header("NAME", name)
             .send()
             .await?
-            .json()
+            .text()
             .await?;
+        let json_data: Value = serde_json::from_str(&res)?;
         let final_resp = format!("User account has been created for {} with X-API-KEY {},
     \nYou Have Been Logged in with the Current Key\n\nDONT LOOSE THIS KEY,
      THIS KEY SHOULD BE KEPT SAFELY, SAVE THIS PROPERLY!!,\n\n 
      THE KEY HAS BEEN SAVED TO $HOME/.drivogram/credentials",
     name.red().italic().bold(),
-    res.x_api_key.yellow().bold().on_green());
-        let content = format!("X-API-KEY = \"{}\"", res.x_api_key);
-        tokio::fs::File::create(format!(
-            "{}/credentials",
-            credentials_dir()
-        ))
-        .await?;
-        tokio::fs::write(
+    &json_data["X-API-KEY"].as_str().unwrap().yellow().bold().on_green());
+        let content = format!(
+            "X-API-KEY = \"{}\"",
+            json_data["X-API-KEY"].as_str().unwrap()
+        );
+        fs::write(
             format!("{}/credentials", credentials_dir()),
             content,
-        )
-        .await?;
+        )?;
         println!("{}", final_resp.purple().bold());
     }
     Ok(())
@@ -67,7 +68,7 @@ pub async fn login_check(
         sub_match.get_one::<String>("X-API-KEY").expect("Required");
     let client = reqwest::Client::new();
     let response = client
-        .get(helpers::domain("logincheck"))
+        .get(helpers::get_domain("logincheck"))
         .header("X-API-KEY", key)
         .send()
         .await?;
@@ -82,8 +83,8 @@ pub async fn login_check(
     match status {
         Ok(bool) => match bool {
             true => {
-                if fs::metadata(format!("{}/credentials", credentials_dir()))
-        .is_ok(){
+                if path_exists(&format!("{}/credentials", credentials_dir()))
+        {
                     println!("{}", "Login Check Successfull, Your credentials are already saved".bold().yellow().on_black())
                 }
                 else{
@@ -125,11 +126,16 @@ pub async fn login_check(
 pub async fn show_data() -> Result<(), Box<dyn std::error::Error>> {
     let key = helpers::read_toml()
         .get("X-API-KEY")
-        .ok_or("Your Userkey wasnt passed, Please signup or login")?
+        .ok_or_else(|| {
+            eprintln!(
+                "Your Userkey wasnt passed, Please signup or login"
+            )
+        })
+        .unwrap()
         .to_string();
     let client = reqwest::Client::new();
     let mut resp: helpers::UploadResponse = client
-        .get(helpers::domain("uploads"))
+        .get(helpers::get_domain("uploads"))
         .header("X-API-KEY", key)
         .send()
         .await?
@@ -163,10 +169,15 @@ pub async fn download_file(
     let client = reqwest::Client::new();
     let u_key = helpers::read_toml()
         .get("X-API-KEY")
-        .ok_or("Your Userkey wasnt passed, Please signup or login")?
+        .ok_or_else(|| {
+            eprintln!(
+                "Your Userkey wasnt passed, Please signup or login"
+            )
+        })
+        .unwrap()
         .to_string();
     let mut resp = client
-        .get(helpers::domain("download"))
+        .get(helpers::get_domain("download"))
         .header("X-API-KEY", u_key)
         .header("FILE-KEY", key)
         .send()
@@ -239,7 +250,12 @@ pub async fn upload_file(
     let client = reqwest::Client::new();
     let u_key = helpers::read_toml()
         .get("X-API-KEY")
-        .ok_or("Your Userkey wasnt passed, Please signup or login")?
+        .ok_or_else(|| {
+            eprintln!(
+                "Your Userkey wasnt passed, Please signup or login"
+            )
+        })
+        .unwrap()
         .to_string();
     let md = tokio::fs::metadata(file).await.unwrap();
     let _total_size = md.len();
@@ -278,7 +294,7 @@ pub async fn upload_file(
         thread::sleep(Duration::from_millis(3000));
     }
     let res: helpers::UploadedResponse = client
-        .post(helpers::domain("upload"))
+        .post(helpers::get_domain("upload"))
         .header("X-API-KEY", u_key)
         .multipart(form)
         .send()
@@ -302,10 +318,15 @@ pub async fn delete_file(
     let client = reqwest::Client::new();
     let u_key = helpers::read_toml()
         .get("X-API-KEY")
-        .ok_or("Your Userkey wasnt passed, Please signup or login")?
+        .ok_or_else(|| {
+            eprintln!(
+                "Your Userkey wasnt passed, Please signup or login"
+            )
+        })
+        .unwrap()
         .to_string();
     let resp = client
-        .delete(helpers::domain("delete"))
+        .delete(helpers::get_domain("delete"))
         .header("X-API-KEY", u_key)
         .header("FILE-KEY", key)
         .send()
@@ -349,7 +370,12 @@ pub async fn share_file(
     let time = sub_data.get_one::<f64>("time").expect("Required");
     let u_key = helpers::read_toml()
         .get("X-API-KEY")
-        .ok_or("Your Userkey wasnt passed, Please signup or login")?
+        .ok_or_else(|| {
+            eprintln!(
+                "Your Userkey wasnt passed, Please signup or login"
+            )
+        })
+        .unwrap()
         .to_string();
     let client = reqwest::Client::new();
     let post = helpers::SharePost {
@@ -358,7 +384,7 @@ pub async fn share_file(
         exp: *time,
     };
     let resp = client
-        .post(helpers::domain("share"))
+        .post(helpers::get_domain("share"))
         .json(&post)
         .header("X-API-KEY", String::from(&u_key))
         .send()

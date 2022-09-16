@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::env::var;
-
 use std::fs;
 use tabled::Tabled;
 #[derive(Debug, Deserialize, Tabled)]
@@ -13,11 +12,6 @@ pub struct UploadData {
     pub filesize: String,
     #[serde(rename = "file_key")]
     pub filekey: String,
-}
-#[derive(Debug, Deserialize)]
-pub struct SignupKey {
-    #[serde(rename = "X-API-KEY")]
-    pub x_api_key: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -49,19 +43,25 @@ pub struct SharePost {
     pub exp: f64,
 }
 
-pub fn domain(path: &str) -> String {
-    let domain_name = match read_toml().get("DOMAIN-NAME") {
-        Some(name) => {
-            format!("{}{}{}", name.to_string(), "/api/", path)
-        }
-        None => format!(
-            "{}{}",
-            "http://drivogram.aaravarora.in/api/", path
-        ),
-    };
-    domain_name.to_string()
+pub fn path_exists(path: &str) -> bool {
+    fs::metadata(path).is_ok()
 }
-
+pub fn get_domain(route: &str) -> String {
+    let domain = format!("{}/domain.toml", credentials_dir());
+    let validity = path_exists(&domain);
+    if !validity {
+        format!("http://drivogram.aaravarora.in/api/{}", route)
+    } else {
+        let strd = fs::read_to_string(domain).unwrap();
+        let domain_name: HashMap<String, String> =
+            toml::from_str(&strd).unwrap();
+        format!(
+            "{}/api/{}",
+            domain_name.get("DOMAIN-NAME").unwrap().to_string(),
+            route
+        )
+    }
+}
 pub fn credentials_dir() -> String {
     let path = var("HOME").unwrap();
     format!("{}/.drivogram", path)
@@ -70,7 +70,7 @@ pub fn credentials_dir() -> String {
 pub fn read_toml() -> HashMap<String, String> {
     let cred = format!("{}/credentials", credentials_dir());
     let strd =
-        (fs::read_to_string(&cred)).unwrap_or("default".to_string());
+        (fs::read_to_string(&cred)).unwrap_or("None".to_string());
     let data: HashMap<String, String> = match toml::from_str(&strd) {
         Ok(data) => data,
         Err(_) => HashMap::new(),
