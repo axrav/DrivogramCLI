@@ -5,7 +5,7 @@
 A Tool written in Rust to interact with Drivogram's Backend
 
 ## Requirements
-- Rust
+- (Rust)[https://www.rust-lang.org/]
 
 
 ## Installation
