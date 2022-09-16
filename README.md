@@ -15,7 +15,7 @@ cd DrivogramCLI
 bash ./install.sh
 ```
 ## SELF HOST?
-for self hosting add your domain name in ```.drivogram/domain.toml```, an example can be found [here](domain.toml)
+for self hosting add your domain name in ```$HOME/.drivogram/domain.toml```, an example can be found [here](domain.toml)
 
 ## Features
 - Store Unlimited Files (No limit on storage)
