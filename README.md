@@ -26,7 +26,7 @@ for self hosting add your domain name in ```.drivogram/domain.toml```, an exampl
 - Open Sourced ( Make changes as per your requirements, if you know how to do XD)
 
 
-## Support
+## OS Support
 For now Drivogram is only supported for Linux, For Windows/MacOS make sure you compile the source with CARGO
 
 ## Documentation
